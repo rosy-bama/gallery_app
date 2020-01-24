@@ -10,8 +10,10 @@ def create_app(config_class=Config):
     db = SQLAlchemy(app)
 
     from application.users.routes import users
-    from application.pictures.routes import pictures
+    from application.pics.routes import pics
+    from application.albums.routes import albums
     app.register_blueprint(users)
-    app.register_blueprint(pictures)
+    app.register_blueprint(pics)
+    app.register_blueprint(albums)
     
     return app
