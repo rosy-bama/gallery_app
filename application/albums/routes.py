@@ -2,6 +2,19 @@ from flask import Blueprint
 
 albums = Blueprint('albums', __name__)
 
+################ SECRET ROUTES ##############
+@albums.route("/create_default_album")
+def create_default_album():
+    pass
+
+@albums.route("/create_trash")
+def create_trash():
+    pass
+
+@albums.route("/create_archive")
+def create_archive():
+    pass
+################ SECRET ROUTES ##############
 ############## ADMIN ROUTES ##############
 @albums.route("/all_albums")
 def all_albums():
@@ -29,6 +42,7 @@ def update_album():
 
 @albums.route("/archive_album/<album_id>")
 def archive_album():
+    # move to archive, can be restored lateron
     pass
 
 @albums.route("/delete_album/<album_id>")
