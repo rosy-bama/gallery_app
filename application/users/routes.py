@@ -1,13 +1,37 @@
-from flask import Blueprint
-import application.models
+from flask import Blueprint, request, jsonify
+import uuid
+from application.models import *
+from application.users.utils import confirm_email
 
 users = Blueprint('users', __name__)
 
 ################ CREDENTIALITY ROUTES ################
-@users.route("/signup")
+@users.route("/signup", methods=['POST'])
 def signup():
     # with complete signup function 
-    pass
+    data = request.get_json()
+    if User.get_user_with_email_and_password(data['email'], data['password']):
+        return jsonify({'message' : 'User already exists'})
+    new_user = User(username=data['username'], email=data['email'], password=User.hash_password(data['password']), public_id=str(uuid.uuid4()))
+    
+    db.session.add(new_user)
+    db.session.commit()
+
+    confirm_email(new_user)
+    
+    return jsonify({'message':'An email has beeen sent to you to complete your signup'})
+
+
+@users.route("/complete_signup", methods=['PUT'])
+def complete_signup(token):
+    user = user_from_token(token)
+    if not user:
+        return jsonify({'message':'User not found'})
+    user.active = True
+    db.session.merge(user)
+    db.session.commit()
+
+    return jsonify({'message' : 'You have successfully been Registered, you can now login'})
 
 @users.route("/login")
 def login():
