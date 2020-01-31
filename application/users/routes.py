@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-import uuid
+import uuid, secrets
 from application.models import *
-from application.users.utils import confirm_email
+from application.users.utils import confirm_email, activation_code
 
 users = Blueprint('users', __name__)
 
@@ -9,10 +9,12 @@ users = Blueprint('users', __name__)
 @users.route("/signup", methods=['POST'])
 def signup():
     # with complete signup function 
+
     data = request.get_json()
-    if User.get_user_with_email_and_password(data['email'], data['password']):
+    # user = User.get_user_by_email(data['email'])
+    if User.get_user_by_email(data['email']):
         return jsonify({'message' : 'User already exists'})
-    new_user = User(username=data['username'], email=data['email'], password=User.hash_password(data['password']), public_id=str(uuid.uuid4()))
+    new_user = User(username=data['username'], email=data['email'], password=User.hash_password(data['password']), public_id=str(uuid.uuid4()), activation_code = activation_code)
     
     db.session.add(new_user)
     db.session.commit()
@@ -23,15 +25,21 @@ def signup():
 
 
 @users.route("/complete_signup", methods=['PUT'])
-def complete_signup(token):
-    user = user_from_token(token)
-    if not user:
+def complete_signup():
+    data = request.get_json()
+    
+    user = User.get_user_by_email(data['email'])
+    if user is None:
         return jsonify({'message':'User not found'})
-    user.active = True
-    db.session.merge(user)
-    db.session.commit()
 
-    return jsonify({'message' : 'You have successfully been Registered, you can now login'})
+    if user.activation_code == data['code']:
+        user.active = True
+        user.activation_code = None
+        db.session.merge(user)
+        db.session.commit()
+        return jsonify({'message' : 'You have completed your registration, you can now login'})
+    return jsonify({'message':'secret code does not correspond, try again'})
+
 
 @users.route("/login")
 def login():
@@ -68,10 +76,16 @@ def promote_user():
 
 ################ ADMIN ROUTES ################
 
-@users.route("/delete_user")
-def delete_user():
+@users.route("/delete_user/<user_id>", methods=['DELETE'])
+def delete_user(user_id):
     # for admin use only
-    pass
+    new_user = User.get_user_with_id(user_id)
+    print(new_user)
+    if new_user:
+        db.session.delete(new_user)
+        db.session.commit()
+        return jsonify({'message' : 'User successfully deleted'})
+    return jsonify({'message' : 'User not found'})
 
 @users.route("/all_users")
 def read_all_users():

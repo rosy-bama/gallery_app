@@ -4,15 +4,21 @@ from application.config import Config
 
 from flask_mail import Message
 from flask import url_for
+import secrets
+
+activation_code = secrets.token_hex(6)
 
 def confirm_email(user):
     token = user.get_reset_token(user)
-    msg = Message("Email Confirmation", sender=Config.MAIL_USERNAME, recipients=[user.email])
-    msg.body = f'''Hey dear {user.username}, please visit the following link to confirm your Email and complete your signup on GALLERY_APP:
-{url_for('users.complete_signup', token=token, _external=True)}
+    msg = Message(subject="Email Confirmation", sender=Config.MAIL_USERNAME, recipients=[user.email])
+    msg.body = f'''
+    Hey dear {user.username}, You're almost done! Please enter the code below into our app to confirm your Email:
+{activation_code}
 
-Simply ignore this message if you did not make such a request.
+    Simply ignore this message if you did not make such a request.
     '''
+
+    mail.send(msg)
 
 def user_from_token(token):
     try:

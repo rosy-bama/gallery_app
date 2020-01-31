@@ -18,6 +18,7 @@ class User(db.Model):
     profile_pic = db.Column(db.String(200), default="default.jpg")
     active = db.Column(db.Boolean, default=False)
     admin = db.Column(db.Boolean, default=False)
+    activation_code = db.Column(db.String(100))
     pics = db.relationship('Pics', backref='user', lazy=True)
 
     created_on = db.Column(db.DateTime, default=datetime.datetime.utcnow)
@@ -26,11 +27,12 @@ class User(db.Model):
     def __repr__(self):
         return f"User({self.username}, {self.email}, {len(self.pics)})"
 
-    def __init__(self, username, email, password, public_id):
+    def __init__(self, username, email, password, public_id, activation_code):
         self.username = username
         self.email = email
         self.password = User.hash_password(password)
         self.public_id = public_id
+        self.activation_code = activation_code
 
     def get_reset_token(self, public_id):
         token = jwt.encode({'public_id': self.public_id, 'exp':datetime.datetime.utcnow()+datetime.timedelta(minutes=30)}, Config.SECRET_KEY)
@@ -55,6 +57,11 @@ class User(db.Model):
             return user
         else:
             return None
+    
+    @staticmethod
+    def get_user_by_email(email):
+         return User.query.filter_by(email=email).first()
+
     
     @staticmethod
     def get_user_with_id(id):
